@@ -15,16 +15,20 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .insert_resource(WinitSettings::desktop_app())
         .insert_resource(ElementalEnergy(BigInt::from(0)))
+        .insert_resource(ElementalEnergyPerSecond(BigInt::from(0)))
         .add_plugin(HelloPlugin)
         .run();
 }
 
+#[derive(Component)]
+struct ElementalEnergyButton;
+
 fn button_system(
     mut interaction_query: Query<
         (&Interaction, &mut UiColor, &Children),
-        (Changed<Interaction>, With<Button>),
+        (Changed<Interaction>, With<Button>, With<ElementalEnergyButton>),
     >,
-    mut text_query: Query<&mut Text>,
+    mut text_query: Query<&mut Text, With<ElementalEnergyButton>>,
     mut amount: ResMut<ElementalEnergy>,
 ) {
     for (interaction, mut color, children) in interaction_query.iter_mut() {
@@ -91,10 +95,10 @@ fn summons_system(
 
 ) {
     for (interaction, mut color, children) in interaction_query.iter_mut() {
-        let text = text_query.get_mut(children[0]).unwrap();
+        //let text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Clicked => {
-                println!("Summon button pressed for {} elemental", text.sections[0].value);
+                println!("Summon button pressed for an elemental");
                 *color = PRESSED_BUTTON.into();
             }
             Interaction::Hovered => { 
@@ -205,7 +209,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ),
                 ..default()
             });
-        });
+        })
+        .insert(ElementalEnergyButton);
         //Upgrades box
         parent.spawn_bundle(NodeBundle {
             style: Style{
@@ -235,11 +240,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             })
             .insert(ScrollingList::default())
             .with_children(|parent|{
-                let textStyle = TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 40.0,
-                    color: Color::rgb(0.9, 0.9, 0.9),
-                };
                 parent.spawn_bundle(ButtonBundle{ style: Style{ size : Size::new(Val::Px(150.0), Val::Px(65.0)),
                         margin : Rect::all(Val::Auto),
                         justify_content : JustifyContent::Center,
@@ -255,8 +255,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             ..default()
                         },
                         text: Text::with_section(
-                            "Fire Elemental",
-                            textStyle,
+                        "Fire Elemental",
+                        TextStyle {
+                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                                font_size: 40.0,
+                                color: Color::rgb(0.9, 0.9, 0.9),
+                            },
                             Default::default(),
                         ),
                         ..default()
