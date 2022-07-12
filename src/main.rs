@@ -4,6 +4,7 @@ use bevy::{
     winit::WinitSettings, ui,
 };
 use num::bigint::*;
+
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const PRESSED_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
@@ -13,9 +14,7 @@ struct ElementalEnergy(BigInt);
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .insert_resource(WinitSettings::desktop_app())
-        .insert_resource(ElementalEnergy(BigInt::from(0)))
-        .insert_resource(ElementalEnergyPerSecond(BigInt::from(0)))
+        
         .add_plugin(HelloPlugin)
         .run();
 }
@@ -32,19 +31,19 @@ fn button_system(
     mut amount: ResMut<ElementalEnergy>,
 ) {
     for (interaction, mut color, children) in interaction_query.iter_mut() {
-        let mut text = text_query.get_mut(children[0]).unwrap();
+        //let mut text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Clicked => {
-                text.sections[0].value = "Press".to_string();
+                //text.sections[0].value = "Press".to_string();
                 amount.0+=1;
                 *color = PRESSED_BUTTON.into();
             }
             Interaction::Hovered => {
-                text.sections[0].value = "Hover".to_string();
+                //text.sections[0].value = "Hover".to_string();
                 *color = HOVERED_BUTTON.into();
             }
             Interaction::None => {
-                text.sections[0].value = "Button".to_string();
+                //text.sections[0].value = "Button".to_string();
                 *color = NORMAL_BUTTON.into();
             }
 
@@ -59,12 +58,20 @@ struct ScrollingList {
 
 #[derive(Component)]
 struct ElementalEnergyText;
+struct EnergyTimer(Timer);
 fn energy_system(
-    energy: Res<ElementalEnergy>,
+    mut energy: ResMut<ElementalEnergy>,
+    energy_per_second: Res<ElementalEnergyPerSecond>,
     mut energy_text: Query<&mut Text, With<ElementalEnergyText>>,
+    time: Res<Time>,
+    mut timer: ResMut<EnergyTimer>,
 ) {
     for mut text in energy_text.iter_mut() {
-        text.sections[0].value = format!("{} elemental energy", energy.0.to_str_radix(10));
+        text.sections[0].value = format!("{}\n elemental energy", energy.0.to_str_radix(10));
+    }
+    if timer.0.tick(time.delta()).just_finished() {
+        energy.0+= energy_per_second.0.clone();
+
     }
 }
 
@@ -75,7 +82,7 @@ fn energy_per_second_system(
     mut energy_per_second_text: Query<&mut Text, With<ElementalEnergyPerSecondText>>,
 ) {
     for mut text in energy_per_second_text.iter_mut() {
-        text.sections[0].value = format!("{} elemental energy per second", energy_per_second.0.to_str_radix(10))
+        text.sections[0].value = format!("{}\n elemental energy per second", energy_per_second.0.to_str_radix(10))
     }
 }
 
@@ -88,17 +95,22 @@ enum Summon {
 
 fn summons_system(
     mut interaction_query: Query<
-        (&Interaction, &mut UiColor, &Children),
+        (&Interaction, &mut UiColor, &Children, &Summon),
         (Changed<Interaction>, With<Button>, With<Summon>),
     >,
-    mut text_query: Query<&mut Text, (With<Summon>)>
-
+    mut text_query: Query<&mut Text, (With<Summon>)>,
+    mut energy_per_second: ResMut<ElementalEnergyPerSecond>
 ) {
-    for (interaction, mut color, children) in interaction_query.iter_mut() {
+    for (interaction, mut color, children, summon) in interaction_query.iter_mut() {
         //let text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Clicked => {
                 println!("Summon button pressed for an elemental");
+                match summon {
+                    Summon::FireElemental(eps) => energy_per_second.0+=eps,
+                    Summon::AirElemental(eps) => energy_per_second.0+=eps,
+                    Summon::ElectricityElemental(eps) => energy_per_second.0+=eps,
+                }
                 *color = PRESSED_BUTTON.into();
             }
             Interaction::Hovered => { 
@@ -121,8 +133,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(NodeBundle{
         style: Style {
             size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-
-            justify_content: JustifyContent::SpaceBetween,
             ..default()
         },
         color: Color::NONE.into(),
@@ -154,7 +164,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     align_self: AlignSelf::Center,
                     ..default()
                 },
-                text: Text::with_section("0 energy",
+                text: Text::with_section("0\n energy",
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                     font_size: 40.0,
@@ -171,7 +181,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     align_self: AlignSelf::Center,
                     ..default()
                 },
-                text: Text::with_section("0 energy per second",
+                text: Text::with_section("0\n energy per second",
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                     font_size: 40.0,
@@ -211,14 +221,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             });
         })
         .insert(ElementalEnergyButton);
-        //Upgrades box
+        //Summons box
         parent.spawn_bundle(NodeBundle {
             style: Style{
                 size: Size::new(Val::Percent(25.0), Val::Percent(95.0)),
                 border: Rect::all(Val::Px(2.0)),
-                justify_content: JustifyContent::SpaceEvenly,
+                justify_content: JustifyContent::FlexEnd,
                 align_items: AlignItems::Center,
-                align_self: AlignSelf::Center,
+                //align_self: AlignSelf::Center,
                 flex_direction: FlexDirection::ColumnReverse,
                 overflow: Overflow::Hidden,
                 ..default()
@@ -231,6 +241,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent.spawn_bundle(NodeBundle {
                 style: Style{
                     flex_direction: FlexDirection::ColumnReverse,
+                    justify_content: JustifyContent::FlexEnd,
                     flex_grow: 1.0,
                     max_size: Size::new(Val::Undefined, Val::Undefined),
                     ..default()
@@ -240,9 +251,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             })
             .insert(ScrollingList::default())
             .with_children(|parent|{
-                parent.spawn_bundle(ButtonBundle{ style: Style{ size : Size::new(Val::Px(150.0), Val::Px(65.0)),
+                parent.spawn_bundle(ButtonBundle{ 
+                    style: Style{
+                        size : Size::new(Val::Auto, Val::Px(65.0)),
                         margin : Rect::all(Val::Auto),
-                        justify_content : JustifyContent::Center,
                         align_items : AlignItems::Center,
                         ..default()
                     },
@@ -258,7 +270,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         "Fire Elemental",
                         TextStyle {
                                 font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                                font_size: 40.0,
+                                font_size: 20.0,
                                 color: Color::rgb(0.9, 0.9, 0.9),
                             },
                             Default::default(),
@@ -268,7 +280,65 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 })
                 .insert(Summon::FireElemental(BigInt::from(10)));
                 
-
+                parent.spawn_bundle(ButtonBundle{ 
+                    style: Style{
+                        size : Size::new(Val::Auto, Val::Px(65.0)),
+                        margin : Rect::all(Val::Auto),
+                        justify_content: JustifyContent::FlexStart,
+                        align_items : AlignItems::Center,
+                        ..default()
+                    },
+                    color: NORMAL_BUTTON.into(),
+                    ..default()
+                }).with_children(|parent| {
+                    parent.spawn_bundle(TextBundle{
+                        style: Style{
+                            margin: Rect::all(Val::Px(10.0)),
+                            ..default()
+                        },
+                        text: Text::with_section(
+                        "Air Elemental",
+                        TextStyle {
+                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                                font_size: 20.,
+                                color: Color::rgb(0.9, 0.9, 0.9),
+                            },
+                            Default::default(),
+                        ),
+                        ..default()
+                    });
+                })
+                .insert(Summon::AirElemental(BigInt::from(100)));
+                
+                parent.spawn_bundle(ButtonBundle{ 
+                    style: Style{
+                        size : Size::new(Val::Auto, Val::Px(65.0)),
+                        margin : Rect::all(Val::Auto),
+                        justify_content : JustifyContent::Center,
+                        align_items : AlignItems::Center,
+                        ..default()
+                    },
+                    color: NORMAL_BUTTON.into(),
+                    ..default()
+                }).with_children(|parent| {
+                    parent.spawn_bundle(TextBundle{
+                        style: Style{
+                            margin: Rect::all(Val::Px(10.0)),
+                            ..default()
+                        },
+                        text: Text::with_section(
+                        "Electricity Elemental",
+                        TextStyle {
+                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                                font_size: 20.,
+                                color: Color::rgb(0.9, 0.9, 0.9),
+                            },
+                            Default::default(),
+                        ),
+                        ..default()
+                    });
+                })
+                .insert(Summon::ElectricityElemental(BigInt::from(1000)));
             });
         });
     });
@@ -304,6 +374,9 @@ pub struct HelloPlugin;
 impl Plugin for HelloPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup)
+        .insert_resource(ElementalEnergy(BigInt::from(0)))
+        .insert_resource(ElementalEnergyPerSecond(BigInt::from(0)))
+        .insert_resource(EnergyTimer(Timer::from_seconds(1., true)))
         .add_system(mouse_scroll)
         .add_system(energy_system)
         .add_system(button_system)
