@@ -1,3 +1,4 @@
+use crate::*;
 use bevy::{
     input::mouse::{MouseScrollUnit, MouseWheel},
     prelude::*,
@@ -9,12 +10,15 @@ const HOVERED_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const PRESSED_BUTTON: Color = Color::srgb(1., 0., 0.);
 
 pub mod elemental_energy;
+pub mod upgrades;
 
 #[derive(Component)]
 pub struct ElementalEnergyButton;
 
 pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn((Camera2dBundle::default(), IsDefaultUiCamera));
+    let elementals = generate_elemental_list();
+    let upgrades = upgrades::generate_upgrade_list();
     //root node
     commands
         .spawn(NodeBundle {
@@ -87,13 +91,19 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn(ButtonBundle {
                     style: Style {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
+                        width: Val::Px(300.0),
+                        height: Val::Px(120.0),
                         margin: UiRect {
                             left: Val::Auto,
                             right: Val::Auto,
                             top: Val::Auto,
                             bottom: Val::Auto,
+                        },
+                        padding: UiRect {
+                            left: Val::Px(10.),
+                            right: Val::Px(10.),
+                            top: Val::Px(10.),
+                            bottom: Val::Px(10.),
                         },
                         align_items: AlignItems::Center,
                         ..default()
@@ -102,8 +112,9 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 })
                 .with_children(|parent| {
                     parent.spawn(TextBundle {
+                        style: Style { ..default() },
                         text: Text::from_section(
-                            "Button",
+                            "Create Elemental Energy",
                             TextStyle {
                                 font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                                 font_size: 40.0,
@@ -114,185 +125,179 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     });
                 })
                 .insert(ElementalEnergyButton);
-            //Summons box
+            //Right side box
             parent
                 .spawn(NodeBundle {
                     style: Style {
                         width: Val::Percent(25.0),
-                        height: Val::Percent(95.0),
+                        height: Val::Percent(100.0),
+
                         border: UiRect {
                             left: Val::Px(2.0),
                             right: Val::Px(2.0),
                             top: Val::Px(2.0),
                             bottom: Val::Px(2.0),
                         },
-                        align_items: AlignItems::Center,
-                        //align_self: AlignSelf::Center,
-                        flex_direction: FlexDirection::ColumnReverse,
+
+                        margin: UiRect {
+                            right: Val::Px(10.),
+                            ..default()
+                        },
+
+                        flex_direction: FlexDirection::Column,
                         overflow: Overflow::clip(),
                         ..default()
                     },
                     ..default()
                 })
                 .with_children(|parent| {
+                    //upgrade buttons
+                    parent
+                        .spawn(NodeBundle {
+                            style: Style {
+                                display: Display::Flex,
+                                flex_wrap: FlexWrap::NoWrap,
+                                height: Val::Percent(10.),
+                                overflow: Overflow::clip(),
+                                ..default()
+                            },
+                            ..default()
+                        })
+                        .with_children(|parent| {
+                            for i in upgrades {
+                                parent.spawn(ButtonBundle { ..default() }).with_children(
+                                    |parent| {
+                                        parent.spawn(TextBundle {
+                                            style: Style {
+                                                margin: UiRect {
+                                                    left: Val::Px(10.),
+                                                    right: Val::Px(10.),
+                                                    top: Val::Px(10.),
+                                                    bottom: Val::Px(10.),
+                                                },
+                                                ..default()
+                                            },
+                                            text: Text::from_section(
+                                                format!("{}", i.label),
+                                                TextStyle {
+                                                    font: asset_server
+                                                        .load("fonts/FiraSans-Bold.ttf"),
+                                                    font_size: 20.0,
+                                                    color: Color::srgb(0.9, 0.9, 0.9),
+                                                },
+                                            ),
+                                            ..default()
+                                        });
+                                    },
+                                );
+                            }
+                        });
+
                     //scrolling list
                     parent
                         .spawn(NodeBundle {
                             style: Style {
-                                flex_direction: FlexDirection::ColumnReverse,
-                                flex_grow: 1.0,
-                                max_width: Val::Percent(100.),
-                                max_height: Val::Percent(100.),
+                                flex_direction: FlexDirection::Column,
+
+                                align_items: AlignItems::Stretch,
+                                align_content: AlignContent::FlexStart,
+                                margin: UiRect {
+                                    bottom: Val::Px(10.),
+                                    ..default()
+                                },
+                                width: Val::Percent(100.),
+                                height: Val::Percent(90.),
                                 ..default()
                             },
                             ..default()
                         })
                         .insert(ScrollingList::default())
                         .with_children(|parent| {
-                            parent
-                                .spawn(ButtonBundle {
-                                    style: Style {
-                                        width: Val::Auto,
-                                        height: Val::Px(65.0),
-                                        margin: UiRect {
-                                            left: Val::Auto,
-                                            right: Val::Auto,
-                                            top: Val::Auto,
-                                            bottom: Val::Auto,
-                                        },
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    ..default()
-                                })
-                                .with_children(|parent| {
-                                    parent.spawn(TextBundle {
+                            for ele in elementals {
+                                parent
+                                    .spawn(ButtonBundle {
                                         style: Style {
-                                            margin: UiRect {
-                                                left: Val::Px(10.),
-                                                right: Val::Px(10.),
-                                                top: Val::Px(10.),
-                                                bottom: Val::Px(10.),
-                                            },
-                                            ..default()
-                                        },
-                                        text: Text::from_section(
-                                            "Fire Elemental",
-                                            TextStyle {
-                                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                                                font_size: 20.0,
-                                                color: Color::srgb(0.9, 0.9, 0.9),
-                                            },
-                                        ),
-                                        ..default()
-                                    });
-                                })
-                                .insert(elemental_energy::Summon::FireElemental(
-                                    elemental_energy::Elemental {
-                                        energy_per_second: BigInt::from(10),
-                                        total_energy_per_second: BigInt::from(0),
-                                        quantity: BigInt::from(0),
-                                        cost: BigInt::from(25),
-                                    },
-                                ));
+                                            flex_grow: 1.0,
+                                            flex_basis: Val::Auto,
+                                            display: Display::Flex,
 
-                            parent
-                                .spawn(ButtonBundle {
-                                    style: Style {
-                                        width: Val::Auto,
-                                        height: Val::Px(65.0),
-                                        margin: UiRect {
-                                            left: Val::Auto,
-                                            right: Val::Auto,
-                                            top: Val::Auto,
-                                            bottom: Val::Auto,
-                                        },
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    ..default()
-                                })
-                                .with_children(|parent| {
-                                    parent.spawn(TextBundle {
-                                        style: Style {
                                             margin: UiRect {
-                                                left: Val::Px(10.),
-                                                right: Val::Px(10.),
                                                 top: Val::Px(10.),
-                                                bottom: Val::Px(10.),
+                                                ..default()
                                             },
+                                            align_items: AlignItems::Center,
                                             ..default()
                                         },
-                                        text: Text::from_section(
-                                            "Air Elemental",
-                                            TextStyle {
-                                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                                                font_size: 20.,
-                                                color: Color::srgb(0.9, 0.9, 0.9),
-                                            },
-                                        ),
                                         ..default()
-                                    });
-                                })
-                                .insert(elemental_energy::Summon::AirElemental(
-                                    elemental_energy::Elemental {
-                                        energy_per_second: BigInt::from(20),
-                                        total_energy_per_second: BigInt::from(0),
-                                        quantity: BigInt::from(0),
-                                        cost: BigInt::from(50),
-                                    },
-                                ));
-
-                            parent
-                                .spawn(ButtonBundle {
-                                    style: Style {
-                                        width: Val::Auto,
-                                        height: Val::Px(65.0),
-                                        margin: UiRect {
-                                            left: Val::Auto,
-                                            right: Val::Auto,
-                                            top: Val::Auto,
-                                            bottom: Val::Auto,
-                                        },
-                                        justify_content: JustifyContent::Center,
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    ..default()
-                                })
-                                .with_children(|parent| {
-                                    parent.spawn(TextBundle {
-                                        style: Style {
-                                            margin: UiRect {
-                                                left: Val::Px(10.),
-                                                right: Val::Px(10.),
-                                                top: Val::Px(10.),
-                                                bottom: Val::Px(10.),
+                                    })
+                                    .with_children(|parent| {
+                                        parent.spawn((
+                                            NodeBundle {
+                                                style: Style {
+                                                    width: Val::Px(32.0),
+                                                    height: Val::Px(32.0),
+                                                    flex_basis: Val::Px(32.),
+                                                    margin: UiRect::top(Val::VMin(5.)),
+                                                    ..default()
+                                                },
+                                                ..default()
                                             },
+                                            UiImage::new(asset_server.load("icons/fire.png")),
+                                        ));
+                                        parent.spawn(TextBundle {
+                                            style: Style {
+                                                flex_grow: 1.,
+                                                margin: UiRect {
+                                                    left: Val::Px(10.),
+                                                    right: Val::Px(10.),
+                                                    top: Val::Px(10.),
+                                                    bottom: Val::Px(10.),
+                                                },
+                                                ..default()
+                                            },
+                                            text: Text::from_section(
+                                                ele.get_label(),
+                                                TextStyle {
+                                                    font: asset_server
+                                                        .load("fonts/FiraSans-Bold.ttf"),
+                                                    font_size: 20.0,
+                                                    color: Color::srgb(0.9, 0.9, 0.9),
+                                                },
+                                            ),
                                             ..default()
-                                        },
-                                        text: Text::from_section(
-                                            "Electricity Elemental",
-                                            TextStyle {
-                                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                                                font_size: 20.,
-                                                color: Color::srgb(0.9, 0.9, 0.9),
-                                            },
-                                        ),
-                                        ..default()
-                                    });
-                                })
-                                .insert(elemental_energy::Summon::ElectricityElemental(
-                                    elemental_energy::Elemental {
-                                        energy_per_second: BigInt::from(30),
-                                        total_energy_per_second: BigInt::from(0),
-                                        quantity: BigInt::from(0),
-                                        cost: BigInt::from(100),
-                                    },
-                                ));
+                                        });
+                                    })
+                                    .insert(ele);
+                            }
                         });
                 });
         });
+}
+
+fn generate_elemental_list() -> Vec<Summon> {
+    vec![
+        Summon::FireElemental(Elemental {
+            label: "Fire Elemental".to_string(),
+            energy_per_second: BigInt::from(10),
+            total_energy_per_second: BigInt::from(0),
+            quantity: BigInt::from(0),
+            cost: BigInt::from(25),
+        }),
+        Summon::AirElemental(Elemental {
+            label: "Air Elemental".to_string(),
+            energy_per_second: BigInt::from(20),
+            total_energy_per_second: BigInt::from(0),
+            quantity: BigInt::from(0),
+            cost: BigInt::from(50),
+        }),
+        Summon::ElectricityElemental(Elemental {
+            label: "Electricity Elemental".to_string(),
+            energy_per_second: BigInt::from(30),
+            total_energy_per_second: BigInt::from(0),
+            quantity: BigInt::from(0),
+            cost: BigInt::from(100),
+        }),
+    ]
 }
 
 #[derive(Component, Default)]

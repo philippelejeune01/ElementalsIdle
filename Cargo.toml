@@ -7,4 +7,8 @@ edition = "2021"
 
 [dependencies]
 num = "0.4"
-bevy = "0.14"
+bevy = { version = "0.14.2", features = [
+    "bevy_gizmos",
+    "bevy_ui",
+    "bevy_dev_tools",
+] }

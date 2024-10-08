@@ -1,3 +1,4 @@
+use crate::*;
 use bevy::prelude::*;
 use num::bigint::*;
 
@@ -11,7 +12,9 @@ pub struct ElementalEnergy {
     pub amount: BigInt,
 }
 
+#[derive(Resource)]
 pub struct Elemental {
+    pub label: String,
     pub energy_per_second: BigInt,
     pub total_energy_per_second: BigInt,
     pub quantity: BigInt,
@@ -25,7 +28,7 @@ pub enum Summon {
     AirElemental(Elemental),
 }
 impl Summon {
-    fn upgrade(&mut self) -> BigInt {
+    pub fn upgrade(&mut self) -> BigInt {
         match self {
             Summon::FireElemental(ele) => {
                 let increase = 10.;
@@ -72,25 +75,32 @@ impl Summon {
             }
         }
     }
-    fn get_energy_per_second(&self) -> BigInt {
+    pub fn get_energy_per_second(&self) -> BigInt {
         match self {
             &Summon::FireElemental(ref ele) => return ele.energy_per_second.clone(),
             &Summon::AirElemental(ref ele) => return ele.energy_per_second.clone(),
             &Summon::ElectricityElemental(ref ele) => return ele.energy_per_second.clone(),
         }
     }
-    fn get_total_energy_per_second(&self) -> BigInt {
+    pub fn get_total_energy_per_second(&self) -> BigInt {
         match self {
             &Summon::FireElemental(ref ele) => return ele.total_energy_per_second.clone(),
             &Summon::AirElemental(ref ele) => return ele.total_energy_per_second.clone(),
             &Summon::ElectricityElemental(ref ele) => return ele.total_energy_per_second.clone(),
         }
     }
-    fn get_cost(&self) -> BigInt {
+    pub fn get_cost(&self) -> BigInt {
         match self {
             &Summon::FireElemental(ref ele) => return ele.cost.clone(),
             &Summon::AirElemental(ref ele) => return ele.cost.clone(),
             &Summon::ElectricityElemental(ref ele) => return ele.cost.clone(),
+        }
+    }
+    pub fn get_label(&self) -> String {
+        match self {
+            &Summon::FireElemental(ref ele) => return ele.label.clone(),
+            &Summon::AirElemental(ref ele) => return ele.label.clone(),
+            &Summon::ElectricityElemental(ref ele) => return ele.label.clone(),
         }
     }
 }
