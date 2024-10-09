@@ -34,6 +34,7 @@ impl Plugin for HelloPlugin {
                     inc_game_ui::button_system,
                     energy_per_second_system,
                     summons_system,
+                    summon_total_eps
                 ),
             )
             .insert_resource(ElementalEnergy {

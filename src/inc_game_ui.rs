@@ -244,28 +244,82 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                             },
                                             UiImage::new(asset_server.load("icons/fire.png")),
                                         ));
-                                        parent.spawn(TextBundle {
-                                            style: Style {
-                                                flex_grow: 1.,
-                                                margin: UiRect {
-                                                    left: Val::Px(10.),
-                                                    right: Val::Px(10.),
-                                                    top: Val::Px(10.),
-                                                    bottom: Val::Px(10.),
-                                                },
+                                        parent.spawn(NodeBundle {
+                                            style: Style{
+                                                display: Display::Flex,
+                                                flex_direction: FlexDirection::Column,
                                                 ..default()
                                             },
-                                            text: Text::from_section(
-                                                ele.get_label(),
-                                                TextStyle {
-                                                    font: asset_server
-                                                        .load("fonts/FiraSans-Bold.ttf"),
-                                                    font_size: 20.0,
-                                                    color: Color::srgb(0.9, 0.9, 0.9),
-                                                },
-                                            ),
                                             ..default()
+                                        }).with_children(|parent| {
+                                            parent.spawn(TextBundle {
+                                                style: Style {
+                                                    flex_grow: 1.,
+                                                    margin: UiRect {
+                                                        left: Val::Px(10.),
+                                                        right: Val::Px(10.),
+                                                        top: Val::Px(10.),
+                                                        bottom: Val::Px(10.),
+                                                    },
+                                                    ..default()
+                                                },
+                                                text: Text::from_section(
+                                                    ele.get_label(),
+                                                    TextStyle {
+                                                        font: asset_server
+                                                            .load("fonts/FiraSans-Bold.ttf"),
+                                                        font_size: 20.0,
+                                                        color: Color::srgb(0.9, 0.9, 0.9),
+                                                    },
+                                                ),
+                                                ..default()
+                                            });
+                                            parent.spawn(TextBundle {
+                                                style: Style {
+                                                    flex_grow: 1.,
+                                                    margin: UiRect {
+                                                        left: Val::Px(10.),
+                                                        right: Val::Px(10.),
+                                                        top: Val::Px(10.),
+                                                        bottom: Val::Px(10.),
+                                                    },
+                                                    ..default()
+                                                },
+                                                text: Text::from_section(
+                                                    format!("{}",ele.get_cost().to_str_radix(10)),
+                                                    TextStyle {
+                                                        font: asset_server
+                                                            .load("fonts/FiraSans-Bold.ttf"),
+                                                        font_size: 20.0,
+                                                        color: Color::srgb(0.9, 0.9, 0.9),
+                                                    },
+                                                ),
+                                                ..default()
+                                            });
+                                            parent.spawn(TextBundle {
+                                                style: Style {
+                                                    flex_grow: 1.,
+                                                    margin: UiRect {
+                                                        left: Val::Px(10.),
+                                                        right: Val::Px(10.),
+                                                        top: Val::Px(10.),
+                                                        bottom: Val::Px(10.),
+                                                    },
+                                                    ..default()
+                                                },
+                                                text: Text::from_section(
+                                                    "0",
+                                                    TextStyle {
+                                                        font: asset_server
+                                                            .load("fonts/FiraSans-Bold.ttf"),
+                                                        font_size: 20.0,
+                                                        color: Color::srgb(0.9, 0.9, 0.9),
+                                                    },
+                                                ),
+                                                ..default()
+                                            }).insert(SummonEPSText);
                                         });
+                                        
                                     })
                                     .insert(ele);
                             }

@@ -12,7 +12,7 @@ pub struct ElementalEnergy {
     pub amount: BigInt,
 }
 
-#[derive(Resource)]
+#[derive(Component)]
 pub struct Elemental {
     pub label: String,
     pub energy_per_second: BigInt,
@@ -77,30 +77,37 @@ impl Summon {
     }
     pub fn get_energy_per_second(&self) -> BigInt {
         match self {
-            &Summon::FireElemental(ref ele) => return ele.energy_per_second.clone(),
-            &Summon::AirElemental(ref ele) => return ele.energy_per_second.clone(),
-            &Summon::ElectricityElemental(ref ele) => return ele.energy_per_second.clone(),
+            &Summon::FireElemental(ref ele) => ele.energy_per_second.clone(),
+            &Summon::AirElemental(ref ele) => ele.energy_per_second.clone(),
+            &Summon::ElectricityElemental(ref ele) => ele.energy_per_second.clone(),
         }
     }
     pub fn get_total_energy_per_second(&self) -> BigInt {
         match self {
-            &Summon::FireElemental(ref ele) => return ele.total_energy_per_second.clone(),
-            &Summon::AirElemental(ref ele) => return ele.total_energy_per_second.clone(),
-            &Summon::ElectricityElemental(ref ele) => return ele.total_energy_per_second.clone(),
+            &Summon::FireElemental(ref ele) => ele.total_energy_per_second.clone(),
+            &Summon::AirElemental(ref ele) => ele.total_energy_per_second.clone(),
+            &Summon::ElectricityElemental(ref ele) => ele.total_energy_per_second.clone(),
         }
     }
     pub fn get_cost(&self) -> BigInt {
         match self {
-            &Summon::FireElemental(ref ele) => return ele.cost.clone(),
-            &Summon::AirElemental(ref ele) => return ele.cost.clone(),
-            &Summon::ElectricityElemental(ref ele) => return ele.cost.clone(),
+            &Summon::FireElemental(ref ele) => ele.cost.clone(),
+            &Summon::AirElemental(ref ele) => ele.cost.clone(),
+            &Summon::ElectricityElemental(ref ele) => ele.cost.clone(),
         }
     }
     pub fn get_label(&self) -> String {
         match self {
-            &Summon::FireElemental(ref ele) => return ele.label.clone(),
-            &Summon::AirElemental(ref ele) => return ele.label.clone(),
-            &Summon::ElectricityElemental(ref ele) => return ele.label.clone(),
+            &Summon::FireElemental(ref ele) => ele.label.clone(),
+            &Summon::AirElemental(ref ele) => ele.label.clone(),
+            &Summon::ElectricityElemental(ref ele) => ele.label.clone(),
+        }
+    }
+    pub fn increase_total_eps(&mut self, amount: BigInt) -> (){
+        match self{
+            Summon::FireElemental(ref mut ele) => ele.total_energy_per_second += amount,
+            Summon::AirElemental(ref mut ele) => ele.total_energy_per_second += amount,
+            Summon::ElectricityElemental(ref mut ele) => ele.total_energy_per_second += amount,
         }
     }
 }
@@ -110,11 +117,9 @@ pub fn summons_system(
         (&Interaction, &mut BackgroundColor, &Children, &mut Summon),
         (Changed<Interaction>, With<Button>, With<Summon>),
     >,
-    text_query: Query<&mut Text, With<Summon>>,
     mut energy: ResMut<ElementalEnergy>,
 ) {
     for (interaction, mut color, children, mut summon) in interaction_query.iter_mut() {
-        //let text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Pressed => {
                 let eps_increase = summon.upgrade();
@@ -123,7 +128,8 @@ pub fn summons_system(
 
                 if energy.amount >= summon.get_cost() {
                     energy.amount -= summon.get_cost();
-                    energy.per_second += eps_increase;
+                    energy.per_second += eps_increase.clone();
+                    summon.increase_total_eps(eps_increase.clone())
                 } else {
                     println!("Not enough energy to summon this elemental")
                 }
@@ -152,7 +158,6 @@ pub fn energy_per_second_system(
         )
     }
 }
-
 #[derive(Component)]
 pub struct ElementalEnergyText;
 #[derive(Resource)]
@@ -170,4 +175,17 @@ pub fn energy_system(
         let per_second = energy.per_second.clone();
         energy.amount += per_second;
     }
+}
+
+#[derive(Component)]
+pub struct SummonEPSText;
+pub fn summon_total_eps(
+    mut summon_eps_text: Query<(&mut Text), With<SummonEPSText>>
+){
+    println!("Dn");
+    for (mut text) in summon_eps_text.iter_mut() {
+        println!("text:{} ele total eps : {}", text.sections[0].value, ele.total_energy_per_second);
+        text.sections[0].value = format!("total eps: {}", ele.total_energy_per_second);
+    }
+    
 }
